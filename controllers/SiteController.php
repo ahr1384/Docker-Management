@@ -49,7 +49,48 @@ class SiteController extends Controller
 
     public function actionIndex()
     {
-        return $this->render('index');
+        // check user is logged in
+        if (Yii::$app->user->isGuest) {
+            return $this->redirect(['login']);
+        }
+
+        // get docker lists
+        exec('docker container ls -a --format=json', $dockers);
+        $dockers = array_map(fn ($docker) => json_decode($docker, true), $dockers);
+
+        return $this->render('index', ['dockers' => $dockers]);
+    }
+
+    public function actionStart($id)
+    {
+        // start docker
+        $status = exec("docker container start $id");
+
+        if ($status != $id) {
+            // redirect with error message
+            Yii::$app->session->setFlash('error', 'Failed to start container');
+            return $this->goHome();
+        }
+
+        // redirect with success message
+        Yii::$app->session->setFlash('success', 'Container started successfully');
+        return $this->goHome();
+    }
+
+    public function actionStop($id)
+    {
+        // stop docker
+        $status = exec("docker container stop $id");
+
+        if ($status != $id) {
+            // redirect with error message
+            Yii::$app->session->setFlash('error', 'Failed to stop container');
+            return $this->goHome();
+        }
+
+        // redirect with success message
+        Yii::$app->session->setFlash('success', 'Container stopped successfully');
+        return $this->goHome();
     }
 
     public function actionLogin()
